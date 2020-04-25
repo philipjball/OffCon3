@@ -127,7 +127,7 @@ def main():
     parser.add_argument('--seed', type=int, default=100)
     parser.add_argument('--use_obs_filter', dest='obs_filter', action='store_true')
     parser.add_argument('--update_every_n_steps', type=int, default=1)
-    parser.add_argument('--n_random_actions', type=int, default=10000)
+    parser.add_argument('--n_random_actions', type=int, default=25000)
     parser.add_argument('--n_collect_steps', type=int, default=1000)
     parser.add_argument('--n_evals', type=int, default=1)
     parser.add_argument('--save_model', dest='save_model', action='store_true')

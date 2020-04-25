@@ -12,7 +12,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class TD3_Agent:
 
-    def __init__(self, seed, state_dim, action_dim, action_lim=1, lr=1e-3, gamma=0.99, tau=5e-3, batchsize=100, hidden_size=256, update_interval=2, buffer_size=1e6, target_noise=0.2, target_noise_clip=0.5, explore_noise=0.1):
+    def __init__(self, seed, state_dim, action_dim, action_lim=1, lr=3e-4, gamma=0.99, tau=5e-3, batchsize=256, hidden_size=256, update_interval=2, buffer_size=1e6, target_noise=0.2, target_noise_clip=0.5, explore_noise=0.1):
         self.gamma = gamma
         self.tau = tau
         self.batchsize = batchsize
