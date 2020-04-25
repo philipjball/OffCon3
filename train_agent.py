@@ -95,7 +95,7 @@ def train_agent_model_free(agent, env, params):
                 eval_reward = evaluate_agent(env, agent, state_filter, n_starts=n_evals)
                 writer.add_scalar('Reward/Train', running_reward, cumulative_timestep)
                 writer.add_scalar('Reward/Test', eval_reward, cumulative_timestep)
-                print('Episode {} \t Samples {} \t Avg length: {} \t Test reward: {} \t Train reward: {} \t Number of Policy Updates: {}'.format(i_episode, samples_number, avg_length, eval_reward, running_reward, n_updates))
+                print('Episode {} \t Samples {} \t Avg length: {} \t Test reward: {} \t Train reward: {} \t Number of Updates: {}'.format(i_episode, samples_number, avg_length, eval_reward, running_reward, n_updates))
                 episode_steps = []
                 episode_rewards = []
             if cumulative_timestep % gif_interval == 0:

@@ -56,10 +56,9 @@ class TD3_Agent:
             state = state_filter(state)
         state = torch.Tensor(state).view(1,-1).to(device)
         with torch.no_grad():
-            mean = self.policy(state)
-        if deterministic:
-            return np.atleast_1d(mean.squeeze().cpu().numpy())
-        action = mean + self.explore_noise * torch.randn_like(mean)
+            action = self.policy(state)
+        if not deterministic:
+            action += self.explore_noise * torch.randn_like(action)
         action.clamp_(-self.action_lim, self.action_lim)
         return np.atleast_1d(action.squeeze().cpu().numpy())
     
