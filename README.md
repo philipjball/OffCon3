@@ -1,6 +1,10 @@
 # Twin Delayed DDPG (TD3) in PyTorch
 A relatively minimal PyTorch SAC implementation from scratch. Heavily borrowed from my other repo, [SAC-PyTorch](https://github.com/fiorenza2/SAC-PyTorch).
 
+## Implementation Details
+
+This code borrows the hyperparameters from [Scott Fujimoto's implementation](https://github.com/sfujim/TD3) but with one difference, which is that the network architecture is the same as the SAC paper (barring the additional output units for log-variance). This means there's an extra layer of 256 hidden units.
+
 ## Get Started
 
 Simply run:
