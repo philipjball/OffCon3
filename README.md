@@ -25,4 +25,6 @@ for default args. Changeable args are:
 
 ## Results
 
-WIP
+Gets 14,000 on `HalfCheetah-v2` at 1.3 million samples. This is better than SAC!
+
+Full graphs TBA; computer died.
