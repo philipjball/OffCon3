@@ -1,5 +1,5 @@
 # Twin Delayed DDPG (TD3) in PyTorch
-A relatively minimal PyTorch SAC implementation from scratch. Heavily borrowed from my other repo, [SAC-PyTorch](https://github.com/fiorenza2/SAC-PyTorch).
+A relatively minimal PyTorch SAC implementation from scratch. Heavily based on my other repo, [SAC-PyTorch](https://github.com/fiorenza2/SAC-PyTorch).
 
 ## Implementation Details
 
