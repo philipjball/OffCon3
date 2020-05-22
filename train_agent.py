@@ -7,8 +7,9 @@ from gym.wrappers import RescaleAction
 import numpy as np
 import torch
 from torch.utils.tensorboard import SummaryWriter
+import yaml
 
-from td3 import TD3_Agent
+from agents import SAC_Agent, TD3_Agent
 from utils import MeanStdevFilter, Transition, make_gif, make_checkpoint
 
 
@@ -120,15 +121,38 @@ def evaluate_agent(env, agent, state_filter, n_starts=1):
     return reward_sum / n_starts
 
 
+def get_agent_and_update_params(params):
+    if not params['yaml_config']:
+        yaml_config = '.configs/{}_config.yml'.format(params['alg'])
+
+    with open(yaml_config, 'r') as f:
+        yaml_config = yaml.load(f, Loader=yaml.FullLoader)
+        for config in yaml_config['args']:
+            if config in params:
+                # overwrite Nones
+                if not params[config]:
+                    params[config] = yaml_config['args'][config]
+
+    if params['alg'] == 'td3':
+        agent = TD3_Agent(seed, state_dim, action_dim, yaml_config['alg_config'])
+    elif params['alg'] == 'sac':
+        agent = SAC_Agent(seed, state_dim, action_dim, yaml_config['alg_config'])
+
+    print("Using {} policy optimizer...".format(params['alg'].upper()))
+
+    return params, agent
+
 def main():
     
     parser = ArgumentParser()
     parser.add_argument('--env', type=str, default='HalfCheetah-v2')
+    parser.add_argument('--alg', type=str, default='td3', choices={'td3', 'sac'})
+    parser.add_argument('--yaml_config', type=str, default=None)
     parser.add_argument('--seed', type=int, default=100)
     parser.add_argument('--use_obs_filter', dest='obs_filter', action='store_true')
-    parser.add_argument('--update_every_n_steps', type=int, default=1)
-    parser.add_argument('--n_random_actions', type=int, default=25000)
-    parser.add_argument('--n_collect_steps', type=int, default=1000)
+    parser.add_argument('--update_every_n_steps', type=int, default=None)
+    parser.add_argument('--n_random_actions', type=int, default=None)
+    parser.add_argument('--n_collect_steps', type=int, default=None)
     parser.add_argument('--n_evals', type=int, default=1)
     parser.add_argument('--save_model', dest='save_model', action='store_true')
     parser.set_defaults(obs_filter=False)
@@ -144,7 +168,7 @@ def main():
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
 
-    agent = TD3_Agent(seed, state_dim, action_dim)
+    params, agent = get_agent_and_update_params(seed, state_dim, action_dim, params)
 
     train_agent_model_free(agent=agent, env=env, params=params)
 

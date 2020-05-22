@@ -116,7 +116,9 @@ class OffPolicyAgent:
 
 class TD3_Agent(OffPolicyAgent):
 
-    def __init__(self, seed, state_dim, action_dim, action_lim=1, lr=3e-4, gamma=0.99, tau=5e-3, batchsize=256, hidden_size=256, update_interval=2, buffer_size=1e6, target_noise=0.2, target_noise_clip=0.5, explore_noise=0.1):
+    def __init__(self, seed, state_dim, action_dim, td3_config):
+
+        action_lim=1, lr=3e-4, gamma=0.99, tau=5e-3, batchsize=256, hidden_size=256, update_interval=2, buffer_size=1e6, target_noise=0.2, target_noise_clip=0.5, explore_noise=0.1
 
         super().__init__(seed, state_dim, action_dim, action_lim, lr, gamma, tau, batchsize, hidden_size, update_interval, buffer_size)
 
@@ -178,8 +180,10 @@ class TD3_Agent(OffPolicyAgent):
 
 class SAC_Agent(OffPolicyAgent):
 
-    def __init__(self, seed, state_dim, action_dim, lr=3e-4, gamma=0.99, tau=5e-3, batchsize=256, hidden_size=256, update_interval=1):
+    def __init__(self, seed, state_dim, action_dim, sac_config):
         
+        lr=3e-4, gamma=0.99, tau=5e-3, batchsize=256, hidden_size=256, update_interval=1
+
         super().__init__(seed, state_dim, action_dim, lr, gamma, tau, batchsize, hidden_size, update_interval)
 
         self.target_entropy = -action_dim
