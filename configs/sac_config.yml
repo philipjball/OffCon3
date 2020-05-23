@@ -6,12 +6,13 @@ args:
   n_collect_steps: 1000
 
 alg_config:
-  lr: 3e-4
+  action_lim: 1
+  lr: 3.e-4
   gamma: 0.99
-  tau: 5e-3
+  tau: 5.e-3
   batch_size: 256
   hidden_size: 256
   update_interval: 1
-  buffer_size: 1e6
+  buffer_size: 1.e+6
   # If this is None, it will default to -dim(A) as per SAC Applications paper
-  target_entropy: None
+  target_entropy: null

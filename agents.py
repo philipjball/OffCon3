@@ -48,7 +48,7 @@ class OffPolicyAgent:
         self.replay_pool = new_replay_pool
 
     @property
-    def is_soft():
+    def is_soft(self):
         raise NotImplementedError
 
     def get_action(self, state, state_filter=None, deterministic=False):
@@ -182,7 +182,7 @@ class TD3_Agent(OffPolicyAgent):
         return policy_loss
 
     @property
-    def is_soft():
+    def is_soft(self):
         return False
 
 
@@ -193,7 +193,7 @@ class SAC_Agent(OffPolicyAgent):
                  batch_size=256, hidden_size=256, update_interval=1,
                  target_entropy=None):
         
-        super().__init__(seed, state_dim, action_dim, action_lim
+        super().__init__(seed, state_dim, action_dim, action_lim,
                          lr, gamma, tau,
                          batch_size, hidden_size,
                          update_interval, buffer_size)
@@ -243,5 +243,5 @@ class SAC_Agent(OffPolicyAgent):
         return policy_loss, temp_loss
 
     @property
-    def is_soft():
+    def is_soft(self):
         return True

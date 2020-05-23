@@ -26,7 +26,7 @@ def train_agent_model_free(agent, env, params):
     save_model = params['save_model']
     total_timesteps = params['total_timesteps']
 
-    assert n_collect_steps > agent.batchsize, "We must initially collect as many steps as the batch size!"
+    assert n_collect_steps > agent.batch_size, "We must initially collect as many steps as the batch size!"
 
     avg_length = 0
     time_step = 0
@@ -124,9 +124,13 @@ def evaluate_agent(env, agent, state_filter, n_starts=1):
     return reward_sum / n_starts
 
 
-def get_agent_and_update_params(params):
+def get_agent_and_update_params(seed, state_dim, action_dim, params):
+
+    params_old = params
+    params = params_old.copy()
+
     if not params['yaml_config']:
-        yaml_config = '.configs/{}_config.yml'.format(params['alg'])
+        yaml_config = './configs/{}_config.yml'.format(params['alg'])
 
     with open(yaml_config, 'r') as f:
         yaml_config = yaml.load(f, Loader=yaml.FullLoader)

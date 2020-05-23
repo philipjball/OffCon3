@@ -6,13 +6,14 @@ args:
   n_collect_steps: 1000
 
 alg_config:
-  lr: 3e-4
+  action_lim: 1
+  lr: 3.e-4
   gamma: 0.99
-  tau: 5e-3
+  tau: 5.e-3
   batch_size: 256
   hidden_size: 256
   update_interval: 2
-  buffer_size: 1e6
+  buffer_size: 1.e+6
   target_noise: 0.2
   target_noise_clip: 0.5
   explore_noise: 0.1
