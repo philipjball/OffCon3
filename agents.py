@@ -12,10 +12,13 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class OffPolicyAgent:
 
-    def __init__(self, seed, state_dim, action_dim, action_lim=1, lr=3e-4, gamma=0.99, tau=5e-3, batchsize=256, hidden_size=256, update_interval=2, buffer_size=1e6):
+    def __init__(self, seed, state_dim, action_dim,
+                 action_lim=1, lr=3e-4, gamma=0.99,
+                 tau=5e-3, batch_size=256, hidden_size=256,
+                 update_interval=2, buffer_size=1e6):
         self.gamma = gamma
         self.tau = tau
-        self.batchsize = batchsize
+        self.batch_size = batch_size
         self.update_interval = update_interval
         self.action_lim = action_lim
 
@@ -61,9 +64,9 @@ class OffPolicyAgent:
         raise NotImplementedError
 
     def optimize(self, n_updates, state_filter=None):
-        q1_loss, q2_loss, pi_loss a_loss = 0, 0, None, None
+        q1_loss, q2_loss, pi_loss, a_loss = 0, 0, None, None
         for i in range(n_updates):
-            samples = self.replay_pool.sample(self.batchsize)
+            samples = self.replay_pool.sample(self.batch_size)
             if state_filter:
                 state_batch = torch.FloatTensor(state_filter(samples.state)).to(device)
                 nextstate_batch = torch.FloatTensor(state_filter(samples.nextstate)).to(device)
@@ -116,11 +119,16 @@ class OffPolicyAgent:
 
 class TD3_Agent(OffPolicyAgent):
 
-    def __init__(self, seed, state_dim, action_dim, td3_config):
+    def __init__(self, seed, state_dim, action_dim,
+                 action_lim=1, lr=3e-4, gamma=0.99,
+                 tau=5e-3, batch_size=256, hidden_size=256,
+                 update_interval=2, buffer_size=1e6,
+                 target_noise=0.2, target_noise_clip=0.5, explore_noise=0.1):
 
-        action_lim=1, lr=3e-4, gamma=0.99, tau=5e-3, batchsize=256, hidden_size=256, update_interval=2, buffer_size=1e6, target_noise=0.2, target_noise_clip=0.5, explore_noise=0.1
-
-        super().__init__(seed, state_dim, action_dim, action_lim, lr, gamma, tau, batchsize, hidden_size, update_interval, buffer_size)
+        super().__init__(seed, state_dim, action_dim, action_lim,
+                         lr, gamma, tau,
+                         batch_size, hidden_size,
+                         update_interval, buffer_size)
 
         self.target_noise = target_noise
         self.target_noise_clip = target_noise_clip
@@ -180,13 +188,17 @@ class TD3_Agent(OffPolicyAgent):
 
 class SAC_Agent(OffPolicyAgent):
 
-    def __init__(self, seed, state_dim, action_dim, sac_config):
+    def __init__(self, seed, state_dim, action_dim,
+                 lr=3e-4, gamma=0.99, tau=5e-3,
+                 batch_size=256, hidden_size=256, update_interval=1,
+                 target_entropy=None):
         
-        lr=3e-4, gamma=0.99, tau=5e-3, batchsize=256, hidden_size=256, update_interval=1
+        super().__init__(seed, state_dim, action_dim, action_lim
+                         lr, gamma, tau,
+                         batch_size, hidden_size,
+                         update_interval, buffer_size)
 
-        super().__init__(seed, state_dim, action_dim, lr, gamma, tau, batchsize, hidden_size, update_interval)
-
-        self.target_entropy = -action_dim
+        self.target_entropy = target_entropy if target_entropy else -action_dim
 
         # aka temperature
         self.log_alpha = torch.zeros(1, requires_grad=True, device=device)

@@ -9,7 +9,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 import yaml
 
-from agents import SAC_Agent, TD3_Agent
+from agents import TD3_Agent, SAC_Agent
 from utils import MeanStdevFilter, Transition, make_gif, make_checkpoint
 
 
@@ -24,6 +24,7 @@ def train_agent_model_free(agent, env, params):
     n_collect_steps = params['n_collect_steps']
     use_statefilter = params['obs_filter']
     save_model = params['save_model']
+    total_timesteps = params['total_timesteps']
 
     assert n_collect_steps > agent.batchsize, "We must initially collect as many steps as the batch size!"
 
@@ -53,7 +54,7 @@ def train_agent_model_free(agent, env, params):
 
     writer = SummaryWriter()
 
-    while samples_number < 3e7:
+    while samples_number < total_timesteps:
         time_step = 0
         episode_reward = 0
         i_episode += 1
@@ -82,7 +83,7 @@ def train_agent_model_free(agent, env, params):
             episode_reward += reward
             # update if it's time
             if cumulative_timestep % update_timestep == 0 and cumulative_timestep > n_collect_steps:
-                q1_loss, q2_loss, pi_loss = agent.optimize(update_timestep, state_filter=state_filter)
+                q1_loss, q2_loss, pi_loss, a_loss = agent.optimize(update_timestep, state_filter=state_filter)
                 n_updates += 1
             # logging
             if cumulative_timestep % log_interval == 0 and cumulative_timestep > n_collect_steps:
@@ -91,6 +92,8 @@ def train_agent_model_free(agent, env, params):
                 #TODO: This may not work; fix this
                 if pi_loss:
                     writer.add_scalar('Loss/policy', pi_loss, n_updates)
+                if a_loss:
+                    writer.add_scalar('Loss/target_entropy', pi_loss, n_updates)
                 avg_length = np.mean(episode_steps)
                 running_reward = np.mean(episode_rewards)
                 eval_reward = evaluate_agent(env, agent, state_filter, n_starts=n_evals)
@@ -127,20 +130,34 @@ def get_agent_and_update_params(params):
 
     with open(yaml_config, 'r') as f:
         yaml_config = yaml.load(f, Loader=yaml.FullLoader)
+        # update overall args with the yaml file
         for config in yaml_config['args']:
             if config in params:
-                # overwrite Nones
+                # overwrite Nones, else leave it alone
                 if not params[config]:
                     params[config] = yaml_config['args'][config]
 
+    alg_config = yaml_config['alg_config']
+
     if params['alg'] == 'td3':
-        agent = TD3_Agent(seed, state_dim, action_dim, yaml_config['alg_config'])
+        agent = TD3_Agent(seed, state_dim, action_dim,
+                          action_lim=alg_config['action_lim'], lr=alg_config['lr'], gamma=alg_config['gamma'],
+                          tau=alg_config['tau'], batch_size=alg_config['batch_size'], hidden_size=alg_config['hidden_size'],
+                          update_interval=alg_config['update_interval'], buffer_size=alg_config['buffer_size'],
+                          target_noise=alg_config['target_noise'], target_noise_clip=alg_config['target_noise_clip'], explore_noise=alg_config['explore_noise'])
     elif params['alg'] == 'sac':
-        agent = SAC_Agent(seed, state_dim, action_dim, yaml_config['alg_config'])
+        agent = SAC_Agent(seed, state_dim, action_dim, 
+                          action_lim=alg_config['action_lim'], lr=alg_config['lr'], gamma=alg_config['gamma'],
+                          tau=alg_config['tau'], batch_size=alg_config['batch_size'], hidden_size=alg_config['hidden_size'],
+                          update_interval=alg_config['update_interval'], buffer_size=alg_config['buffer_size'],
+                          target_entropy=alg_config['target_entropy'])
+    else:
+        raise Exception('algorithm {} not supported'.format(params['alg']))
 
     print("Using {} policy optimizer...".format(params['alg'].upper()))
 
     return params, agent
+
 
 def main():
     
@@ -154,6 +171,7 @@ def main():
     parser.add_argument('--n_random_actions', type=int, default=None)
     parser.add_argument('--n_collect_steps', type=int, default=None)
     parser.add_argument('--n_evals', type=int, default=1)
+    parser.add_argument('--total_timesteps', type=int, default=1e7)
     parser.add_argument('--save_model', dest='save_model', action='store_true')
     parser.set_defaults(obs_filter=False)
     parser.set_defaults(save_model=False)
