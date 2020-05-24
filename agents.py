@@ -96,6 +96,7 @@ class OffPolicyAgent:
                 for p in self.q_funcs.parameters():
                     p.requires_grad = False
                 pi_loss_step = self.update_policy(state_batch)
+                # if there's a soft policy (i.e., max-ent), then we need to update target entropy
                 if self.is_soft:
                     if not a_loss:
                         a_loss = 0
@@ -134,7 +135,7 @@ class TD3_Agent(OffPolicyAgent):
         self.target_noise_clip = target_noise_clip
         self.explore_noise = explore_noise
 
-        # TD3 has a target policy
+        # TD3 also has a target POLICY
         self.target_policy = copy.deepcopy(self.policy)
         for p in self.target_policy.parameters():
             p.requires_grad = False
@@ -205,10 +206,9 @@ class SAC_Agent(OffPolicyAgent):
         self.policy = StochasticPolicy(state_dim, action_dim, hidden_size=hidden_size).to(device)
         self.policy_optimizer = torch.optim.Adam(self.policy.parameters(), lr=lr)
 
-        # aka temperature
+        # aka temperature for target entropy
         self.log_alpha = torch.zeros(1, requires_grad=True, device=device)
         self.alpha = self.log_alpha.exp()
-
         self.temp_optimizer = torch.optim.Adam([self.log_alpha], lr=lr)
     
     def get_action(self, state, state_filter=None, deterministic=False):
