@@ -167,7 +167,7 @@ def main():
     
     parser = ArgumentParser()
     parser.add_argument('--env', type=str, default='HalfCheetah-v2')
-    parser.add_argument('--alg', type=str, default='td3', choices={'td3', 'sac'})
+    parser.add_argument('--alg', type=str, default='td3', choices={'td3', 'sac', 'tds'})
     parser.add_argument('--yaml_config', type=str, default=None)
     parser.add_argument('--seed', type=int, default=100)
     parser.add_argument('--use_obs_filter', dest='obs_filter', action='store_true')

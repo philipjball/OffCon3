@@ -250,3 +250,67 @@ class SAC_Agent(OffPolicyAgent):
     @property
     def is_soft(self):
         return True
+
+
+class TDS_Agent(OffPolicyAgent):
+
+    def __init__(self, seed, state_dim, action_dim,
+                 action_lim=1, lr=3e-4, gamma=0.99,
+                 tau=5e-3, batch_size=256, hidden_size=256,
+                 update_interval=2, buffer_size=1e6,
+                 target_noise=0.2, target_noise_clip=0.5, explore_noise=0.1):
+
+        super().__init__(seed, state_dim, action_dim, action_lim,
+                         lr, gamma, tau,
+                         batch_size, hidden_size,
+                         update_interval, buffer_size)
+
+        self.target_noise = target_noise
+        self.target_noise_clip = target_noise_clip
+        self.explore_noise = explore_noise
+
+        # # TD3 also has a target POLICY
+        # self.target_policy = copy.deepcopy(self.policy)
+        # for p in self.target_policy.parameters():
+        #     p.requires_grad = False
+
+    def get_action(self, state, state_filter=None, deterministic=False):
+        if state_filter:
+            state = state_filter(state)
+        with torch.no_grad():
+            action, _, mean = self.policy(torch.Tensor(state).view(1,-1).to(device))
+        if deterministic:
+            return mean.squeeze().cpu().numpy()
+        return np.atleast_1d(action.squeeze().cpu().numpy())
+
+    def update_target(self):
+        """moving average update of target networks"""
+        with torch.no_grad():
+            for target_q_param, q_param in zip(self.target_q_funcs.parameters(), self.q_funcs.parameters()):
+                target_q_param.data.copy_(self.tau * q_param.data + (1.0 - self.tau) * target_q_param.data)
+
+    def update_q_functions(self, state_batch, action_batch, reward_batch, nextstate_batch, done_batch):
+        with torch.no_grad():
+            nextaction_batch, _, nextmean_batch = self.policy(nextstate_batch, get_logprob=False)
+            target_noise = nextaction_batch - nextmean_batch
+            target_noise += self.target_noise * torch.randn_like(nextaction_batch)
+            target_noise.clamp_(-self.target_noise_clip, self.target_noise_clip)
+            q_t1, q_t2 = self.target_q_funcs(nextstate_batch, nextmean_batch)
+            # take min to mitigate positive bias in q-function training
+            q_target = torch.min(q_t1, q_t2)
+            value_target = reward_batch + (1.0 - done_batch) * self.gamma * q_target
+        q_1, q_2 = self.q_funcs(state_batch, action_batch)
+        loss_1 = F.mse_loss(q_1, value_target)
+        loss_2 = F.mse_loss(q_2, value_target)
+        return loss_1, loss_2
+
+    def update_policy(self, state_batch):
+        action_batch, _, _ = self.policy(state_batch, get_logprob=False)
+        q_b1, q_b2 = self.q_funcs(state_batch, action_batch)
+        qval_batch = torch.min(q_b1, q_b2)
+        policy_loss = (-qval_batch).mean()
+        return policy_loss
+
+    @property
+    def is_soft(self):
+        return False
