@@ -52,7 +52,7 @@ def train_agent_model_free(agent, env, params):
 
     max_steps = env.spec.max_episode_steps
 
-    writer = SummaryWriter()
+    writer = SummaryWriter(log_dir=params['experiment_name'])
 
     while samples_number < total_timesteps:
         time_step = 0
@@ -177,6 +177,7 @@ def main():
     parser.add_argument('--n_evals', type=int, default=1)
     parser.add_argument('--total_timesteps', type=int, default=1e7)
     parser.add_argument('--save_model', dest='save_model', action='store_true')
+    parser.add_argument('--experiment_name', type=str, default=None)
     parser.set_defaults(obs_filter=False)
     parser.set_defaults(save_model=False)
 
