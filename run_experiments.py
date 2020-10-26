@@ -7,7 +7,9 @@ MJCTimeStepLookUp = {
     "HalfCheetah-v2": 3e6,
     "Hopper-v2": 1e6,
     "Walker2d-v2": 3e6,
-    "Humanoid-v2": 10e6
+    "Humanoid-v2": 10e6,
+    "Ant-v2": 3e6,
+    "InvertedPendulum-v2": 1e6
 }
 
 parser = argparse.ArgumentParser()
@@ -40,9 +42,7 @@ if seeds_5to9:
     lower += 5
     upper += 5
 
-remaining_seeds = [4]
-
-all_experiments = [main_experiment + [str(i)] + ["--experiment_name"] + [experiment_id + str(i)] for i in remaining_seeds]
+all_experiments = [main_experiment + [str(i)] + ["--experiment_name"] + [experiment_id + str(i)] for i in range(lower, upper)]
 
 def run_experiment(spec):
     subprocess.run(spec, check=True)
