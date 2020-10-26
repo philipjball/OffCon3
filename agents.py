@@ -104,7 +104,6 @@ class OffPolicyAgent:
                     self.temp_optimizer.zero_grad()
                     a_loss_step.backward()
                     self.temp_optimizer.step()
-                    self.alpha = self.log_alpha.exp()
                     a_loss += a_loss_step.detach().item()
                 self.policy_optimizer.zero_grad()
                 pi_loss_step.backward()
@@ -207,9 +206,8 @@ class SAC_Agent(OffPolicyAgent):
         self.policy_optimizer = torch.optim.Adam(self.policy.parameters(), lr=lr)
 
         # aka temperature for target entropy
-        self.log_alpha = torch.zeros(1, requires_grad=True, device=device)
-        self.alpha = self.log_alpha.exp()
-        self.temp_optimizer = torch.optim.Adam([self.log_alpha], lr=lr)
+        self._log_alpha = torch.zeros(1, requires_grad=True, device=device)
+        self.temp_optimizer = torch.optim.Adam([self._log_alpha], lr=lr)
     
     def get_action(self, state, state_filter=None, deterministic=False):
         if state_filter:
@@ -244,12 +242,16 @@ class SAC_Agent(OffPolicyAgent):
         q_b1, q_b2 = self.q_funcs(state_batch, action_batch)
         qval_batch = torch.min(q_b1, q_b2)
         policy_loss = (self.alpha * logprobs_batch - qval_batch).mean()
-        temp_loss = -self.log_alpha * (logprobs_batch.detach() + self.target_entropy).mean()
+        temp_loss = -self.alpha * (logprobs_batch.detach() + self.target_entropy).mean()
         return policy_loss, temp_loss
 
     @property
     def is_soft(self):
         return True
+
+    @property
+    def alpha(self):
+        return self._log_alpha.exp()
 
 
 class TDS_Agent(OffPolicyAgent):
@@ -264,6 +266,9 @@ class TDS_Agent(OffPolicyAgent):
                          lr, gamma, tau,
                          batch_size, hidden_size,
                          update_interval, buffer_size)
+
+        self.policy = StochasticPolicy(state_dim, action_dim, hidden_size=hidden_size).to(device)
+        self.policy_optimizer = torch.optim.Adam(self.policy.parameters(), lr=lr)
 
         self.target_noise = target_noise
         self.target_noise_clip = target_noise_clip
@@ -281,6 +286,7 @@ class TDS_Agent(OffPolicyAgent):
             action, _, mean = self.policy(torch.Tensor(state).view(1,-1).to(device))
         if deterministic:
             return mean.squeeze().cpu().numpy()
+        # action += self.explore_noise * torch.randn_like(action)
         return np.atleast_1d(action.squeeze().cpu().numpy())
 
     def update_target(self):
@@ -293,9 +299,10 @@ class TDS_Agent(OffPolicyAgent):
         with torch.no_grad():
             nextaction_batch, _, nextmean_batch = self.policy(nextstate_batch, get_logprob=False)
             target_noise = nextaction_batch - nextmean_batch
-            target_noise += self.target_noise * torch.randn_like(nextaction_batch)
+            # target_noise += self.target_noise * torch.randn_like(nextaction_batch)
             target_noise.clamp_(-self.target_noise_clip, self.target_noise_clip)
-            q_t1, q_t2 = self.target_q_funcs(nextstate_batch, nextmean_batch)
+            nextaction_batch = nextmean_batch + target_noise
+            q_t1, q_t2 = self.target_q_funcs(nextstate_batch, nextaction_batch)
             # take min to mitigate positive bias in q-function training
             q_target = torch.min(q_t1, q_t2)
             value_target = reward_batch + (1.0 - done_batch) * self.gamma * q_target
