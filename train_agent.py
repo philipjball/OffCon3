@@ -9,7 +9,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 import yaml
 
-from agents import TD3_Agent, SAC_Agent
+from agents import TD3_Agent, SAC_Agent, TDS_Agent
 from utils import MeanStdevFilter, Transition, make_gif, make_checkpoint
 
 
@@ -155,6 +155,12 @@ def get_agent_and_update_params(seed, state_dim, action_dim, params):
                           tau=alg_config['tau'], batch_size=alg_config['batch_size'], hidden_size=alg_config['hidden_size'],
                           update_interval=alg_config['update_interval'], buffer_size=alg_config['buffer_size'],
                           target_entropy=alg_config['target_entropy'])
+    elif params['alg'] == 'tds':
+        agent = TDS_Agent(seed, state_dim, action_dim, 
+                          action_lim=alg_config['action_lim'], lr=alg_config['lr'], gamma=alg_config['gamma'],
+                          tau=alg_config['tau'], batch_size=alg_config['batch_size'], hidden_size=alg_config['hidden_size'],
+                          update_interval=alg_config['update_interval'], buffer_size=alg_config['buffer_size'],
+                          target_noise=alg_config['target_noise'], target_noise_clip=alg_config['target_noise_clip'], explore_noise=alg_config['explore_noise'])
     else:
         raise Exception('algorithm {} not supported'.format(params['alg']))
 
@@ -167,7 +173,7 @@ def main():
     
     parser = ArgumentParser()
     parser.add_argument('--env', type=str, default='HalfCheetah-v2')
-    parser.add_argument('--alg', type=str, default='td3', choices={'td3', 'sac'})
+    parser.add_argument('--alg', type=str, default='td3', choices={'td3', 'sac', 'tds'})
     parser.add_argument('--yaml_config', type=str, default=None)
     parser.add_argument('--seed', type=int, default=100)
     parser.add_argument('--use_obs_filter', dest='obs_filter', action='store_true')

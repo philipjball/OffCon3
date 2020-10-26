@@ -1,4 +1,4 @@
-# **Off** Policy RL for **Con**tinuous **Con**trol Consolidated (OffCon<sup>3</sup>)
+# **Off** Policy RL for **Con**tinuous **Con**trol **Con**solidated (OffCon<sup>3</sup>)
 A minimal PyTorch implementation from scratch of the two model-free state of the art off-policy continuous control algoirthms:
 
 * Twin Delayed DDPG (TD3)
@@ -43,10 +43,3 @@ There are algorithm specific YAML files stored in `./configs/` for TD3 and SAC. 
 
 ## Results
 
-### TD3
-
-Gets 14,000 on `HalfCheetah-v2` at 1.3 million samples. This is better than SAC!
-
-Full graphs TBA; computer died.
-
-### SAC
