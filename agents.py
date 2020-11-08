@@ -274,11 +274,6 @@ class TDS_Agent(OffPolicyAgent):
         self.target_noise_clip = target_noise_clip
         self.explore_noise = explore_noise
 
-        # # TD3 also has a target POLICY
-        # self.target_policy = copy.deepcopy(self.policy)
-        # for p in self.target_policy.parameters():
-        #     p.requires_grad = False
-
     def get_action(self, state, state_filter=None, deterministic=False):
         if state_filter:
             state = state_filter(state)
