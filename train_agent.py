@@ -93,13 +93,14 @@ def train_agent_model_free(agent, env, params):
                 if pi_loss:
                     writer.add_scalar('Loss/policy', pi_loss, n_updates)
                 if a_loss:
-                    writer.add_scalar('Loss/target_entropy', pi_loss, n_updates)
+                    writer.add_scalar('Loss/target_entropy', a_loss, n_updates)
                 avg_length = np.mean(episode_steps)
                 running_reward = np.mean(episode_rewards)
-                eval_reward = evaluate_agent(env, agent, state_filter, n_starts=n_evals)
+                eval_reward, action_var = evaluate_agent(env, agent, state_filter, n_starts=n_evals)
                 writer.add_scalar('Reward/Train', running_reward, cumulative_timestep)
                 writer.add_scalar('Reward/Test', eval_reward, cumulative_timestep)
-                print('Episode {} \t Samples {} \t Avg length: {} \t Test reward: {} \t Train reward: {} \t Number of Updates: {}'.format(i_episode, samples_number, avg_length, eval_reward, running_reward, n_updates))
+                writer.add_scalar('Reward/Action_Var', action_var, cumulative_timestep)
+                print('Episode {} \t Samples {} \t Avg length: {} \t Test reward: {} \t Train reward: {} \t Action Variance: {} \t Number of Updates: {}'.format(i_episode, samples_number, avg_length, eval_reward, running_reward, action_var, n_updates))
                 episode_steps = []
                 episode_rewards = []
             if cumulative_timestep % gif_interval == 0:
@@ -113,15 +114,23 @@ def train_agent_model_free(agent, env, params):
 
 def evaluate_agent(env, agent, state_filter, n_starts=1):
     reward_sum = 0
+    all_actual_actions = []
+    all_random_actions = []
     for _ in range(n_starts):
         done = False
         state = env.reset()
         while (not done):
             action = agent.get_action(state, state_filter=state_filter, deterministic=True)
+            action_rand = agent.get_action(state, state_filter=state_filter, deterministic=False)
+            all_actual_actions.append(action)
+            all_random_actions.append(action_rand)
             nextstate, reward, done, _ = env.step(action)
             reward_sum += reward
             state = nextstate
-    return reward_sum / n_starts
+    all_actual_actions = np.array(all_actual_actions)
+    all_random_actions = np.array(all_random_actions)
+    action_var = ((all_random_actions - all_actual_actions)**2).mean(1).sum() / (all_actual_actions.shape[0] - 1)
+    return reward_sum / n_starts, action_var
 
 
 def get_agent_and_update_params(seed, state_dim, action_dim, params):

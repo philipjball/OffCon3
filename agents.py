@@ -286,7 +286,6 @@ class TDS_Agent(OffPolicyAgent):
             action, _, mean = self.policy(torch.Tensor(state).view(1,-1).to(device))
         if deterministic:
             return mean.squeeze().cpu().numpy()
-        # action += self.explore_noise * torch.randn_like(action)
         return np.atleast_1d(action.squeeze().cpu().numpy())
 
     def update_target(self):
@@ -299,8 +298,6 @@ class TDS_Agent(OffPolicyAgent):
         with torch.no_grad():
             nextaction_batch, _, nextmean_batch = self.policy(nextstate_batch, get_logprob=False)
             target_noise = nextaction_batch - nextmean_batch
-            # target_noise += self.target_noise * torch.randn_like(nextaction_batch)
-            target_noise.clamp_(-self.target_noise_clip, self.target_noise_clip)
             nextaction_batch = nextmean_batch + target_noise
             q_t1, q_t2 = self.target_q_funcs(nextstate_batch, nextaction_batch)
             # take min to mitigate positive bias in q-function training

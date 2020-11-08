@@ -8,8 +8,8 @@ MJCTimeStepLookUp = {
     "Hopper-v2": 1e6,
     "Walker2d-v2": 3e6,
     "Humanoid-v2": 10e6,
-    "Ant-v2": 3e6,
-    "InvertedPendulum-v2": 1e6
+    "Ant-v2": 1e6,
+    "InvertedPendulum-v2": 5e5
 }
 
 parser = argparse.ArgumentParser()
