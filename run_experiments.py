@@ -14,7 +14,7 @@ MJCTimeStepLookUp = {
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--env', type=str, default='HalfCheetah-v2')
-parser.add_argument('--alg', type=str, default='td3', choices={'td3', 'sac'})
+parser.add_argument('--alg', type=str, default='td3', choices={'td3', 'sac', 'mepg'})
 parser.add_argument('--seeds5to9', dest='seeds5to9', action='store_true')
 parser.add_argument('--total_timesteps', type=int, default=None)
 parser.set_defaults(seeds5to9=False)

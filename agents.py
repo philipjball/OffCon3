@@ -254,6 +254,74 @@ class SAC_Agent(OffPolicyAgent):
         return self._log_alpha.exp()
 
 
+class MEPG_Agent(OffPolicyAgent):
+
+    def __init__(self, seed, state_dim, action_dim,
+                 action_lim=1, lr=3e-4, gamma=0.99,
+                 tau=5e-3, batch_size=256, hidden_size=256,
+                 update_interval=1, buffer_size=1e6,
+                 target_entropy=None):
+        
+        super().__init__(seed, state_dim, action_dim, action_lim,
+                         lr, gamma, tau,
+                         batch_size, hidden_size,
+                         update_interval, buffer_size)
+
+        self.target_entropy = target_entropy if target_entropy else -action_dim
+
+        # SAC uses the reparameterisation trick to propagate gradients through the variance head for entropy control
+        self.policy = StochasticPolicy(state_dim, action_dim, hidden_size=hidden_size).to(device)
+        self.policy_optimizer = torch.optim.Adam(self.policy.parameters(), lr=lr)
+
+        # aka temperature for target entropy
+        self._log_alpha = torch.zeros(1, requires_grad=True, device=device)
+        self.temp_optimizer = torch.optim.Adam([self._log_alpha], lr=lr)
+    
+    def get_action(self, state, state_filter=None, deterministic=False):
+        if state_filter:
+            state = state_filter(state)
+        with torch.no_grad():
+            action, _, mean = self.policy(torch.Tensor(state).view(1,-1).to(device))
+        if deterministic:
+            return mean.squeeze().cpu().numpy()
+        return np.atleast_1d(action.squeeze().cpu().numpy())
+
+    def update_target(self):
+        """moving average update of target networks"""
+        with torch.no_grad():
+            for target_q_param, q_param in zip(self.target_q_funcs.parameters(), self.q_funcs.parameters()):
+                target_q_param.data.copy_(self.tau * q_param.data + (1.0 - self.tau) * target_q_param.data)
+
+    def update_q_functions(self, state_batch, action_batch, reward_batch, nextstate_batch, done_batch):
+        with torch.no_grad():
+            nextaction_batch, logprobs_batch, _ = self.policy(nextstate_batch, get_logprob=True)
+            q_t1, q_t2 = self.target_q_funcs(nextstate_batch, nextaction_batch)
+            # take min to mitigate positive bias in q-function training
+            q_target = torch.min(q_t1, q_t2)
+            value_target = reward_batch + (1.0 - done_batch) * self.gamma * q_target
+        q_1, q_2 = self.q_funcs(state_batch, action_batch)
+        loss_1 = F.mse_loss(q_1, value_target)
+        loss_2 = F.mse_loss(q_2, value_target)
+        return loss_1, loss_2
+
+    def update_policy(self, state_batch):
+        """Also updates the temperature parameter"""
+        action_batch, logprobs_batch, _ = self.policy(state_batch, get_logprob=True)
+        q_b1, q_b2 = self.q_funcs(state_batch, action_batch)
+        qval_batch = torch.min(q_b1, q_b2)
+        policy_loss = (self.alpha * logprobs_batch - qval_batch).mean()
+        temp_loss = -self.alpha * (logprobs_batch.detach() + self.target_entropy).mean()
+        return policy_loss, temp_loss
+
+    @property
+    def is_soft(self):
+        return True
+
+    @property
+    def alpha(self):
+        return self._log_alpha.exp()
+
+
 class TDS_Agent(OffPolicyAgent):
 
     def __init__(self, seed, state_dim, action_dim,
