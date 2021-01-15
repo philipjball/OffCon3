@@ -39,6 +39,8 @@ class OffPolicyAgent:
 
         self.replay_pool = ReplayPool(capacity=int(buffer_size))
 
+        self._seed = seed
+
         self._update_counter = 0
 
     def reallocate_replay_pool(self, new_size: int):
@@ -49,6 +51,10 @@ class OffPolicyAgent:
 
     @property
     def is_soft(self):
+        raise NotImplementedError
+
+    @property
+    def alg_name(self):
         raise NotImplementedError
 
     def get_action(self, state, state_filter=None, deterministic=False):
@@ -115,6 +121,27 @@ class OffPolicyAgent:
                 pi_loss += pi_loss_step.detach().item()
 
         return q1_loss, q2_loss, pi_loss, a_loss
+
+    def load_checkpoint(self, checkpoint_path, env_name):
+
+        load_dict = torch.load(checkpoint_path)
+
+        assert load_dict['alg_name'] == self.alg_name, "Incorrect checkpoint, this is a {} policy, but you're loading a {} policy.".format(self.alg_name, load_dict['alg_name'])
+        assert load_dict['env_name'] == env_name, "Incorrect checkpoint, this env is {}, but the policy was trained on {}.".format(env_name, load_dict['env_name'])
+
+        self.q_funcs.load_state_dict(load_dict['double_q_state_dict'])
+        self.target_q_funcs.load_state_dict(load_dict['target_double_q_state_dict'])
+        self.policy.load_state_dict(load_dict['policy_state_dict'])
+
+        if self.is_soft:
+            self._log_alpha = load_dict['log_alpha']
+        
+        if hasattr(self, "target_policy"):
+            self.target_policy.load_state_dict(load_dict['target_policy_state_dict'])
+
+        num_steps = int(load_dict['num_steps'])
+
+        return num_steps
 
 
 class TD3_Agent(OffPolicyAgent):
@@ -185,6 +212,10 @@ class TD3_Agent(OffPolicyAgent):
     def is_soft(self):
         return False
 
+    @property
+    def alg_name(self):
+        return "TD3"
+
 
 class SAC_Agent(OffPolicyAgent):
 
@@ -252,6 +283,10 @@ class SAC_Agent(OffPolicyAgent):
     @property
     def alpha(self):
         return self._log_alpha.exp()
+    
+    @property
+    def alg_name(self):
+        return "SAC"
 
 
 class MEPG_Agent(OffPolicyAgent):
@@ -321,6 +356,10 @@ class MEPG_Agent(OffPolicyAgent):
     def alpha(self):
         return self._log_alpha.exp()
 
+    @property
+    def alg_name(self):
+        return "MEPG"
+
 
 class TDS_Agent(OffPolicyAgent):
 
@@ -381,3 +420,7 @@ class TDS_Agent(OffPolicyAgent):
     @property
     def is_soft(self):
         return False
+
+    @property
+    def alg_name(self):
+        return "TDS"

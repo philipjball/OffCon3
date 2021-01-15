@@ -17,6 +17,7 @@ parser.add_argument('--env', type=str, default='HalfCheetah-v2')
 parser.add_argument('--alg', type=str, default='td3', choices={'td3', 'sac', 'mepg'})
 parser.add_argument('--seeds5to9', dest='seeds5to9', action='store_true')
 parser.add_argument('--total_timesteps', type=int, default=None)
+parser.add_argument('--save_model', dest='save_model', action='store_true')
 parser.set_defaults(seeds5to9=False)
 
 args = parser.parse_args()
@@ -36,7 +37,9 @@ seeds_5to9 = params['seeds5to9']
 lower = 0
 upper = num_experiments
 
-main_experiment = ["python", "train_agent.py", "--env", params['env'], "--alg", params['alg'], "--n_evals", str(10), "--total_timesteps", str(total_timesteps), "--seed"]
+save_model = "--save_model" if params['save_model'] else ""
+
+main_experiment = ["python", "train_agent.py", "--env", params['env'], save_model, "--alg", params['alg'], "--n_evals", str(10), "--total_timesteps", str(total_timesteps), "--seed"]
 
 if seeds_5to9:
     lower += 5

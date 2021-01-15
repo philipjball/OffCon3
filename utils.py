@@ -104,19 +104,50 @@ def make_gif(policy, env, step_count, state_filter, maxsteps=1000):
 
 
 def make_checkpoint(agent, step_count, env_name):
-    q_funcs, target_q_funcs, policy, log_alpha = agent.q_funcs, agent.target_q_funcs, agent.policy, agent.log_alpha
+
+    save_dir = "checkpoints/{}".format(env_name)
+
+    save_path = save_dir + "/{}-{}steps-seed{}.pt".format(agent.alg_name, step_count, agent._seed)
     
-    save_path = "checkpoints/model-{}-{}.pt".format(step_count, env_name)
+    if not os.path.isdir(save_dir):
+        os.makedirs(save_dir)
 
-    if not os.path.isdir('checkpoints'):
-        os.makedirs('checkpoints')
+    save_dict = {
+        'double_q_state_dict': agent.q_funcs.state_dict(),
+        'target_double_q_state_dict': agent.target_q_funcs.state_dict(),
+        'policy_state_dict': agent.policy.state_dict(),
+        'num_steps': step_count,
+        'alg_name': agent.alg_name,
+        'env_name': env_name
+        }
 
-    torch.save({
-        'double_q_state_dict': q_funcs.state_dict(),
-        'target_double_q_state_dict': target_q_funcs.state_dict(),
-        'policy_state_dict': policy.state_dict(),
-        'log_alpha_state_dict': log_alpha
-    }, save_path)
+    if agent.is_soft:
+        save_dict['log_alpha'] = agent._log_alpha
+
+    if hasattr(agent, "target_policy"):
+        save_dict['target_policy_state_dict'] = agent.target_policy.state_dict()
+
+    print("Saving {} Policy at {} Steps".format(agent.alg_name, step_count))
+    torch.save(save_dict, save_path)
+
+def load_checkpoint(agent, checkpoint_path):
+
+    # Weak check to determine if the checkpoint is appropriate for the algorithm
+    assert agent.alg_name in checkpoint_path, "Incorrect checkpoint, this is a {} policy!".format(agent.alg_name)
+
+    load_dict = torch.load(checkpoint_path)
+
+    agent.q_funcs.load_state_dict(load_dict['double_q_state_dict'])
+    agent.target_q_funcs.load_state_dict(load_dict['target_double_q_state_dict'])
+    agent.policy.load_state_dict(load_dict['policy_state_dict'])
+
+    if agent.is_soft:
+        agent._log_alpha = load_dict['log_alpha']
+    
+    if hasattr(agent, "target_policy"):
+        agent.target_policy.load_state_dict(load_dict['target_policy_state_dict'])
+
+    return num_steps
 
 
 # Taken from: https://github.com/pytorch/pytorch/pull/19785/files

@@ -10,7 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 import yaml
 
 from agents import TD3_Agent, SAC_Agent, TDS_Agent, MEPG_Agent
-from utils import MeanStdevFilter, Transition, make_gif, make_checkpoint
+from utils import MeanStdevFilter, Transition, make_gif, make_checkpoint, load_checkpoint
 
 
 def train_agent_model_free(agent, env, params):
@@ -18,12 +18,13 @@ def train_agent_model_free(agent, env, params):
     update_timestep = params['update_every_n_steps']
     seed = params['seed']
     log_interval = 1000
-    gif_interval = 500000
+    checkpoint_interval = params['checkpoint_interval']
     n_random_actions = params['n_random_actions']
     n_evals = params['n_evals']
     n_collect_steps = params['n_collect_steps']
     use_statefilter = params['obs_filter']
     save_model = params['save_model']
+    make_gif = params['make_gif']
     total_timesteps = params['total_timesteps']
 
     assert n_collect_steps > agent.batch_size, "We must initially collect as many steps as the batch size!"
@@ -53,6 +54,9 @@ def train_agent_model_free(agent, env, params):
     max_steps = env.spec.max_episode_steps
 
     writer = SummaryWriter(log_dir=params['experiment_name'])
+
+    if params["load_model_path"]:
+        samples_number = agent.load_checkpoint(params["load_model_path"], params['env'])
 
     while samples_number < total_timesteps:
         time_step = 0
@@ -103,8 +107,9 @@ def train_agent_model_free(agent, env, params):
                 print('Episode {} \t Samples {} \t Avg length: {} \t Test reward: {} \t Train reward: {} \t Action Variance: {} \t Number of Updates: {}'.format(i_episode, samples_number, avg_length, eval_reward, running_reward, action_var, n_updates))
                 episode_steps = []
                 episode_rewards = []
-            if cumulative_timestep % gif_interval == 0:
-                make_gif(agent, env, cumulative_timestep, state_filter)
+            if cumulative_timestep % checkpoint_interval == 0:
+                if make_gif:
+                    make_gif(agent, env, cumulative_timestep, state_filter)
                 if save_model:
                     make_checkpoint(agent, cumulative_timestep, params['env'])
 
@@ -199,6 +204,9 @@ def main():
     parser.add_argument('--total_timesteps', type=int, default=1e7)
     parser.add_argument('--save_model', dest='save_model', action='store_true')
     parser.add_argument('--experiment_name', type=str, default=None)
+    parser.add_argument('--make_gif', dest='make_gif', action='store_true')
+    parser.add_argument('--checkpoint_interval', type=int, default=500000)
+    parser.add_argument('--load_model_path', type=str, default=None)
     parser.set_defaults(obs_filter=False)
     parser.set_defaults(save_model=False)
 
