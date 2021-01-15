@@ -37,9 +37,11 @@ seeds_5to9 = params['seeds5to9']
 lower = 0
 upper = num_experiments
 
-save_model = "--save_model" if params['save_model'] else ""
 
-main_experiment = ["python", "train_agent.py", "--env", params['env'], save_model, "--alg", params['alg'], "--n_evals", str(10), "--total_timesteps", str(total_timesteps), "--seed"]
+main_experiment = ["python", "train_agent.py", "--env", params['env'], "--alg", params['alg'], "--n_evals", str(10), "--total_timesteps", str(total_timesteps)]
+if params['save_model']:
+    main_experiment.append("--save_model")
+main_experiment.append("--seed")
 
 if seeds_5to9:
     lower += 5
