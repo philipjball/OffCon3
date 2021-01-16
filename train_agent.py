@@ -10,7 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 import yaml
 
 from agents import TD3_Agent, SAC_Agent, TDS_Agent, MEPG_Agent
-from utils import MeanStdevFilter, Transition, make_gif, make_checkpoint, load_checkpoint
+from utils import MeanStdevFilter, Transition, make_gif, make_checkpoint
 
 
 def train_agent_model_free(agent, env, params):
