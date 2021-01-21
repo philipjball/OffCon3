@@ -108,7 +108,7 @@ def make_checkpoint(agent, step_count, env_name):
     save_dir = "checkpoints/{}".format(env_name)
 
     save_path = save_dir + "/{}-{}steps-seed{}.pt".format(agent.alg_name, step_count, agent._seed)
-    
+   
     if not os.path.isdir(save_dir):
         os.makedirs(save_dir)
 
@@ -116,6 +116,8 @@ def make_checkpoint(agent, step_count, env_name):
         'double_q_state_dict': agent.q_funcs.state_dict(),
         'target_double_q_state_dict': agent.target_q_funcs.state_dict(),
         'policy_state_dict': agent.policy.state_dict(),
+        'replay_pool': agent.replay_pool,
+        'num_updates': agent._update_counter,
         'num_steps': step_count,
         'alg_name': agent.alg_name,
         'env_name': env_name
@@ -129,25 +131,6 @@ def make_checkpoint(agent, step_count, env_name):
 
     print("Saving {} Policy at {} Steps".format(agent.alg_name, step_count))
     torch.save(save_dict, save_path)
-
-def load_checkpoint(agent, checkpoint_path):
-
-    # Weak check to determine if the checkpoint is appropriate for the algorithm
-    assert agent.alg_name in checkpoint_path, "Incorrect checkpoint, this is a {} policy!".format(agent.alg_name)
-
-    load_dict = torch.load(checkpoint_path)
-
-    agent.q_funcs.load_state_dict(load_dict['double_q_state_dict'])
-    agent.target_q_funcs.load_state_dict(load_dict['target_double_q_state_dict'])
-    agent.policy.load_state_dict(load_dict['policy_state_dict'])
-
-    if agent.is_soft:
-        agent._log_alpha = load_dict['log_alpha']
-    
-    if hasattr(agent, "target_policy"):
-        agent.target_policy.load_state_dict(load_dict['target_policy_state_dict'])
-
-    return num_steps
 
 
 # Taken from: https://github.com/pytorch/pytorch/pull/19785/files

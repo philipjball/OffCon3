@@ -141,6 +141,9 @@ class OffPolicyAgent:
 
         num_steps = int(load_dict['num_steps'])
 
+        self._update_counter = load_dict['num_updates']
+        self.replay_pool = load_dict['replay_pool']
+
         return num_steps
 
 
