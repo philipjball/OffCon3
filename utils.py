@@ -103,7 +103,7 @@ def make_gif(policy, env, step_count, state_filter, maxsteps=1000):
     clip.write_gif('gifs/{}.gif'.format(gif_name), fps=30)
 
 
-def make_checkpoint(agent, step_count, env_name):
+def make_checkpoint(agent, step_count, env_name, save_replay_pool=False):
 
     save_dir = "checkpoints/{}".format(env_name)
 
@@ -116,7 +116,7 @@ def make_checkpoint(agent, step_count, env_name):
         'double_q_state_dict': agent.q_funcs.state_dict(),
         'target_double_q_state_dict': agent.target_q_funcs.state_dict(),
         'policy_state_dict': agent.policy.state_dict(),
-        'replay_pool': agent.replay_pool,
+        'replay_pool': agent.replay_pool if save_replay_pool else None,
         'num_updates': agent._update_counter,
         'num_steps': step_count,
         'alg_name': agent.alg_name,

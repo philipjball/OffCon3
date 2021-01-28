@@ -111,7 +111,7 @@ def train_agent_model_free(agent, env, params):
                 if make_gif:
                     make_gif(agent, env, cumulative_timestep, state_filter)
                 if save_model:
-                    make_checkpoint(agent, cumulative_timestep, params['env'])
+                    make_checkpoint(agent, cumulative_timestep, params['env'], params['save_replay_pool'])
 
         episode_steps.append(time_step)
         episode_rewards.append(episode_reward)
@@ -206,6 +206,7 @@ def main():
     parser.add_argument('--experiment_name', type=str, default=None)
     parser.add_argument('--make_gif', dest='make_gif', action='store_true')
     parser.add_argument('--checkpoint_interval', type=int, default=500000)
+    parser.add_argument('--save_replay_pool', type=bool, default=False)
     parser.add_argument('--load_model_path', type=str, default=None)
     parser.set_defaults(obs_filter=False)
     parser.set_defaults(save_model=False)
