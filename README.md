@@ -6,7 +6,7 @@ A minimal PyTorch implementation from scratch of the two model-free state of the
 * Twin Delayed DDPG (TD3)
 * Soft Actor Critic (SAC)
 
-This repo consolidates, where possible, the code between these two similar off-policy methods, and highlights the similarities (i.e., optimisation scheme) and differences (i.e., stochastic v.s. deterministic policies).
+This repo consolidates, where possible, the code between these two similar off-policy methods, and highlights the similarities (i.e., optimisation scheme) and differences (i.e., stochastic v.s. deterministic policies). As highlighted in the paper, these implementations utilize 3 hidden layer MLPs (instead of 2) as overall these appear to perform better, especially in HalfCheetah.
 
 Heavily based on my other repos, [TD3-PyTorch](https://github.com/fiorenza2/TD3-PyTorch) and [SAC-PyTorch](https://github.com/fiorenza2/SAC-PyTorch). If you only want to use one of these algorithms, those repos may serve you better.
 
@@ -25,10 +25,10 @@ To cite this repo, please use the following BiBTex:
 ## Implementation Details
 
 ### TD3
-This code implements the [Addressing Function Approximation Error in Actor-Critic Methods](https://arxiv.org/abs/1802.09477) paper, using SAC hyperparameters where appropriate (i.e., learning rate, network architecture).
+This code implements the [Addressing Function Approximation Error in Actor-Critic Methods](https://arxiv.org/abs/1802.09477) paper, using SAC hyperparameters where appropriate (i.e., learning rate, collection steps).
 
 ### SAC
-This code implements the follow up paper [Soft Actor-Critic Algorithms and Applications](https://arxiv.org/abs/1812.05905), which includes a learned entropy trade-off hyperparameter. 
+This code implements the follow up paper [Soft Actor-Critic Algorithms and Applications](https://arxiv.org/abs/1812.05905), which includes a learned entropy trade-off hyperparameter. As noted above, 3 hidden layer MLPs are used in the actor and critic.
 
 ### TDS
 As mentioned in the paper, this is SVG(0) with double-Q (or SAC without entropy); analysis shows this is essentially DDPG when trained on standard Gym MuJoCo.
