@@ -1,12 +1,13 @@
-from collections import deque, namedtuple
 import itertools
-import os
 import math
+import os
 import random
+from collections import deque, namedtuple
 
-from moviepy.editor import ImageSequenceClip
 import numpy as np
 import torch
+from moviepy.editor import ImageSequenceClip
+from numpy.random import default_rng
 from torch.distributions import constraints
 from torch.distributions.transforms import Transform
 from torch.nn.functional import softplus
@@ -48,34 +49,58 @@ class MeanStdevFilter():
 
 class ReplayPool:
 
-    def __init__(self, capacity=1e6):
+    def __init__(self, action_dim, state_dim, capacity=1e6):
         self.capacity = int(capacity)
-        self._memory = deque(maxlen=int(capacity))
-        
+        self._action_dim = action_dim
+        self._state_dim = state_dim
+        self._pointer = 0
+        self._size = 0
+        self._init_memory()
+        self._rng = default_rng()
+
+    def _init_memory(self):
+        self._memory = {
+            'state': np.zeros((self.capacity, self._state_dim), dtype='float32'),
+            'action': np.zeros((self.capacity, self._action_dim), dtype='float32'),
+            'reward': np.zeros((self.capacity), dtype='float32'),
+            'nextstate': np.zeros((self.capacity, self._state_dim), dtype='float32'),
+            'real_done': np.zeros((self.capacity), dtype='bool')
+        }
+
     def push(self, transition: Transition):
-        """ Saves a transition """
-        self._memory.append(transition)
-        
-    def sample(self, batch_size: int, unique: bool = True, dist=None) -> Transition:
-        transitions = random.sample(self._memory, batch_size) if unique else random.choices(self._memory, k=batch_size)
-        return Transition(*zip(*transitions))
 
-    def get(self, start_idx: int, end_idx: int) -> Transition:
-        transitions = list(itertools.islice(self._memory, start_idx, end_idx))
-        return transitions
+        # Handle 1-D Data
+        num_samples = transition.state.shape[0] if len(transition.state.shape) > 1 else 1
+        idx = np.arange(self._pointer, self._pointer + num_samples) % self.capacity
 
-    def get_all(self) -> Transition:
-        return self.get(0, len(self._memory))
+        for key, value in transition._asdict().items():
+            self._memory[key][idx] = value
 
-    def __len__(self) -> int:
-        return len(self._memory)
+        self._pointer = (self._pointer + num_samples) % self.capacity
+        self._size = min(self._size + num_samples, self.capacity)
+
+    def _return_from_idx(self, idx):
+        sample = {k: tuple(v[idx]) for k,v in self._memory.items()}
+        return Transition(**sample)
+
+    def sample(self, batch_size: int, unique: bool = True):
+        idx = np.random.randint(0, self._size, batch_size) if not unique else self._rng.choice(self._size, size=batch_size, replace=False)
+        return self._return_from_idx(idx)
+
+    def sample_all(self):
+        return self._return_from_idx(np.arange(0, self._size))
+
+    def __len__(self):
+        return self._size
 
     def clear_pool(self):
-        self._memory.clear()
+        self._init_memory()
 
-    def initialise(self, old_pool: 'ReplayPool'):
-        old_memory = old_pool.get_all()
-        self._memory.extend(old_memory)
+    def initialise(self, old_pool):
+        # Not Tested
+        old_memory = old_pool.sample_all()
+        for key in self._memory:
+            self._memory[key] = np.append(self._memory[key], old_memory[key], 0)
 
 
 # Code courtesy of JPH: https://github.com/jparkerholder
